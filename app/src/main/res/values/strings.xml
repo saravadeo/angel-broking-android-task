@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Angel Broking</string>
+    <string-array name="user_array">
+        <item>user1</item>
+        <item>user2</item>
+        <item>user3</item>
+        <item>user4</item>
+    </string-array>
+    <string name="title_activity_dashboard">DashboardActivity</string>
+</resources>

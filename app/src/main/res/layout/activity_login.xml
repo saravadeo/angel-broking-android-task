@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:gravity="center"
+    android:background="#ffffff"
+    android:orientation="vertical"
+    tools:context=".LoginActivity">
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="40dp"
+        app:srcCompat="@drawable/angel"
+        tools:layout_editor_absoluteX="42dp"
+        tools:layout_editor_absoluteY="42dp" />
+
+    <Spinner
+        android:background="@drawable/border"
+        android:id="@+id/spinner"
+        android:layout_margin="8dp"
+        android:layout_marginBottom="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="44dp" />
+
+    <Button
+        android:id="@+id/button"
+        android:background="@color/colorPrimary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:textColor="@android:color/white"
+        android:text="Login"
+        tools:layout_editor_absoluteX="23dp"
+        tools:layout_editor_absoluteY="420dp" />
+</LinearLayout>
