@@ -2,10 +2,18 @@ package com.onkar.angelbroking;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.HorizontalBarChart;
@@ -27,235 +35,203 @@ import com.onkar.dto.MonthSpendingDto;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class GraphActivity extends AppCompatActivity {
 
-    List<String> months = new ArrayList<>();
-    private int start = -1;
+    private int progressStatus = 0;
+    private Handler handler = new Handler();
 
     private void fetchDataAndRenderGraph(final Intent intent) {
         int id = intent.getIntExtra("ID", 0);
         switch (id) {
             case R.id.currentMonth:
                 MonthSpendingDto monthSpendingDto = (MonthSpendingDto) intent.getSerializableExtra("DATA");
-                renderCurrentMonthHorizontalBar(monthSpendingDto);
+                renderHorizontalBarForCurrentMonth(monthSpendingDto);
                 break;
             case R.id.history:
                 List<MonthSpendingDto> monthSpendingDtoList = (List<MonthSpendingDto>) intent.getSerializableExtra("DATA");
-                renderHistoryWithVerticalBar(monthSpendingDtoList);
+                //verticleBar(monthSpendingDtoList);
                 break;
             case R.id.spending:
-                renderSpendingHorizontalBar((MonthSpendingDto) intent.getSerializableExtra("DATA"));
+                renderHorizontalBarForCurrentMonthSpending((MonthSpendingDto) intent.getSerializableExtra("DATA"));
                 break;
         }
     }
 
-    private HorizontalBarChart getHorizontalChart() {
-        HorizontalBarChart chart = new HorizontalBarChart(this.getApplicationContext());
-        chart.setDrawBarShadow(false);
-        chart.setDrawValueAboveBar(true);
-        chart.getDescription().setEnabled(false);
-        chart.setMaxVisibleValueCount(60);
-        chart.setDrawGridBackground(false);
-        chart.setFitBars(true);
-        chart.animateY(2500);
-        return chart;
-    }
-
-    private void setYAxis(final HorizontalBarChart chart) {
-        YAxis yl = chart.getAxisLeft();
-        yl.setDrawAxisLine(true);
-        yl.setDrawGridLines(true);
-        yl.setAxisMinimum(0f);
-
-        YAxis yr = chart.getAxisRight();
-        yr.setDrawAxisLine(true);
-        yr.setDrawGridLines(false);
-        yr.setAxisMinimum(0f);
-    }
-
-    private void setLegend(final HorizontalBarChart chart) {
-        Legend l = chart.getLegend();
-        l.setVerticalAlignment(Legend.LegendVerticalAlignment.BOTTOM);
-        l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
-        l.setOrientation(Legend.LegendOrientation.HORIZONTAL);
-        l.setDrawInside(false);
-        l.setFormSize(8f);
-        l.setXEntrySpace(4f);
-    }
-
-    private BarData getCurrentMonthBarData(final MonthSpendingDto monthSpendingDto) {
-        ArrayList<BarEntry> values = new ArrayList<>();
-        values.add(new BarEntry(0, 0));
-        values.add(new BarEntry(20, 100000));
-        values.add(new BarEntry(40, monthSpendingDto.getTotalSpent().longValue()));
-        values.add(new BarEntry(60, 0));
-
-        BarDataSet barDataSet = new BarDataSet(values, "");
-        barDataSet.setDrawIcons(false);
-
-        ArrayList<IBarDataSet> dataSets = new ArrayList<>();
-        dataSets.add(barDataSet);
-
-        BarData data = new BarData(dataSets);
-        data.setValueTextSize(10f);
-        data.setBarWidth(9f);
-        return data;
-    }
-
-    private BarData getSpendingBarData(final MonthSpendingDto monthSpendingDto) {
-
-        Map<String, BigDecimal> spentOn = monthSpendingDto.getSpentOn();
-        final ArrayList<BarEntry> values = new ArrayList<>();
-        values.add(new BarEntry(0, 0,""));
-        int cnt = 15;
-        for(String key: spentOn.keySet()) {
-            BigDecimal value = spentOn.get(key);
-            values.add(new BarEntry(cnt, value.longValue(), key));
-            cnt=cnt+15;
-        }
-        values.add(new BarEntry(cnt, 0,""));
-
-        BarDataSet barDataSet = new BarDataSet(values, "");
-        barDataSet.setDrawIcons(false);
-        barDataSet.setValueFormatter(new IValueFormatter() {
-            @Override
-            public String getFormattedValue(float value, Entry entry, int dataSetIndex, ViewPortHandler viewPortHandler) {
-                return entry.getData().toString();
-            }
-        });
-
-        ArrayList<IBarDataSet> dataSets = new ArrayList<>();
-        dataSets.add(barDataSet);
-
-        BarData data = new BarData(dataSets);
-        data.setValueTextSize(10f);
-        data.setBarWidth(9f);
-        return data;
-    }
-
-    private void renderCurrentMonthHorizontalBar(final MonthSpendingDto monthSpendingDto) {
-        HorizontalBarChart chart = this.getHorizontalChart();
-        this.setYAxis(chart);
-        this.setLegend(chart);
-        chart.setData(this.getCurrentMonthBarData(monthSpendingDto));
+    private void verticleBar(List<MonthSpendingDto> monthSpendingDtoList) {
         LinearLayout linearLayout = (LinearLayout) findViewById(R.id.graph);
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
-        chart.setLayoutParams(layoutParams);
-        linearLayout.addView(chart);
-    }
-
-    private void renderSpendingHorizontalBar(final MonthSpendingDto monthSpendingDto) {
-        HorizontalBarChart chart = this.getHorizontalChart();
-        this.setYAxis(chart);
-        this.setLegend(chart);
-        chart.setData(this.getSpendingBarData(monthSpendingDto));
-        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.graph);
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
-        chart.setLayoutParams(layoutParams);
-        linearLayout.addView(chart);
-    }
-
-    private void renderHistoryWithVerticalBar(List<MonthSpendingDto> monthSpendingDtoList) {
-        BarChart chart = new BarChart(this.getApplicationContext());
-        chart.setPinchZoom(false);
-        chart.setDrawBarShadow(false);
-        chart.setDrawGridBackground(false);
-
-        Legend l = chart.getLegend();
-        l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
-        l.setOrientation(Legend.LegendOrientation.VERTICAL);
-        l.setDrawInside(true);
-        l.setYOffset(0f);
-        l.setXOffset(10f);
-        l.setYEntrySpace(0f);
-        l.setTextSize(8f);
-
-        XAxis xAxis = chart.getXAxis();
-        xAxis.setGranularity(1f);
-        xAxis.setCenterAxisLabels(true);
-        xAxis.setValueFormatter(new IAxisValueFormatter() {
-            @Override
-            public String getFormattedValue(float value, AxisBase axis) {
-                if(value < 0 || value > 11) {
-                    return String.valueOf((int) value);
-                } else {
-                    return months.get((int) value);
-                }
-            }
-        });
-
-        YAxis leftAxis = chart.getAxisLeft();
-        leftAxis.setValueFormatter(new LargeValueFormatter());
-        leftAxis.setDrawGridLines(false);
-        leftAxis.setSpaceTop(35f);
-        leftAxis.setAxisMinimum(0f);
-
-        chart.getAxisRight().setEnabled(false);
-        chart.setData(this.getHistoryBarData(monthSpendingDtoList));
-        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.graph);
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
-        chart.setLayoutParams(layoutParams);
-        linearLayout.addView(chart);
-        float groupSpace = 0.15f;
-        float barSpace = 0.06f;
-        float barWidth = 0.2f;
-        chart.getBarData().setBarWidth(barWidth);
-        chart.getXAxis().setAxisMinimum(start);
-        chart.getXAxis().setAxisMaximum(start + chart.getBarData().getGroupWidth(groupSpace, barSpace) * 3);
-        chart.groupBars(start+0.1f, groupSpace, barSpace);
-        chart.invalidate();
-    }
-
-    private BarData getHistoryBarData(List<MonthSpendingDto> monthSpendingDtoList) {
-        ArrayList<BarEntry> shopping = new ArrayList<>();
-        ArrayList<BarEntry> medicine = new ArrayList<>();
-        ArrayList<BarEntry> other = new ArrayList<>();
+        linearLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
 
         for(MonthSpendingDto monthSpendingDto: monthSpendingDtoList) {
-            if(start == -1) {
-                start = months.indexOf(monthSpendingDto.getMonth());
-            }
             Map<String, BigDecimal> spentOn = monthSpendingDto.getSpentOn();
-            shopping.add(new BarEntry(months.indexOf(monthSpendingDto.getMonth()),spentOn.get("SHOPPING").longValue()));
-            medicine.add(new BarEntry(months.indexOf(monthSpendingDto.getMonth()),spentOn.get("MEDICINE").longValue()));
-            other.add(new BarEntry(months.indexOf(monthSpendingDto.getMonth()),spentOn.get("OTHER").longValue()));
+            for(final Map.Entry<String, BigDecimal> entry: spentOn.entrySet()) {
+                final ProgressBar progressBar = new ProgressBar(this.getApplicationContext(), null, android.R.attr.progressBarStyleHorizontal);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(40,ViewGroup.LayoutParams.MATCH_PARENT);
+                params.setMargins(8, 8, 8, 8);
+                progressBar.setLayoutParams(params);
+                progressBar.setMax(100000);
+                progressBar.setProgressDrawable(this.getResources().getDrawable(R.drawable.verticle_bar));
+                progressBar.setVisibility(View.VISIBLE);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        while (progressStatus < entry.getValue().intValue()) {
+                            progressStatus += 1000;
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressBar.setProgress(progressStatus);
+                                }
+                            });
+                        }
+                    }
+                }).start();
+                linearLayout.addView(progressBar);
+            }
+        }
+    }
+
+    private void renderHorizontalBarForCurrentMonthSpending(final MonthSpendingDto monthSpendingDto) {
+
+        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.graph);
+        linearLayout.setGravity(Gravity.CENTER_VERTICAL);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+        Map<String, BigDecimal> spentOn = monthSpendingDto.getSpentOn();
+
+        List<ProgressBar> progressBarList = new ArrayList<>(3);
+        for(final Map.Entry<String, BigDecimal> entry: spentOn.entrySet()) {
+            final ProgressBar progressBar = new ProgressBar(this.getApplicationContext(), null, android.R.attr.progressBarStyleHorizontal);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 50);
+            params.setMargins(8,40,8,8);
+            progressBar.setLayoutParams(params);
+            progressBar.setMax(100000);
+            progressBar.setProgressDrawable(this.getResources().getDrawable(R.drawable.gradient_progress));
+            progressBar.setVisibility(View.VISIBLE);
+            progressBarList.add(progressBar);
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while(progressStatus < entry.getValue().intValue()){
+                        progressStatus +=1000;
+                        try{
+                            Thread.sleep(100);
+                        }catch(InterruptedException e){
+                            e.printStackTrace();
+                        }
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                progressBar.setProgress(progressStatus);
+                            }
+                        });
+                    }
+                }
+            }).start();
+
+            TextView textView1 = new TextView(this.getApplicationContext());
+            textView1.setText(entry.getValue().intValue()+"");
+            textView1.setTextColor(Color.BLACK);
+            textView1.setTextSize(16);
+
+            TextView textView2 = new TextView(this.getApplicationContext());
+            textView2.setText("100000");
+            textView2.setTextColor(Color.BLACK);
+            textView2.setTextSize(16);
+
+            LinearLayout linearLayoutForText = new LinearLayout(this.getApplicationContext());
+            linearLayoutForText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            linearLayoutForText.setOrientation(LinearLayout.HORIZONTAL);
+            linearLayoutForText.addView(textView1);
+
+            TextView textView = new TextView(this.getApplicationContext());
+            textView.setText(entry.getKey());
+            textView.setTextColor(Color.BLACK);
+            textView.setTextSize(16);
+            textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            linearLayoutForText.addView(textView);
+            linearLayoutForText.addView(textView2);
+            linearLayout.addView(progressBar);
+            linearLayout.addView(linearLayoutForText);
         }
 
-        BarDataSet set1, set2, set3;
-        set1 = new BarDataSet(shopping, "SHOPPING");
-        set1.setColor(Color.rgb(104, 241, 175));
-        set2 = new BarDataSet(medicine, "MEDICINE");
-        set2.setColor(Color.rgb(164, 228, 251));
-        set3 = new BarDataSet(other, "OTHER");
-        set3.setColor(Color.rgb(242, 247, 158));
-        BarData data = new BarData(set1, set2, set3);
-        data.setValueFormatter(new LargeValueFormatter());
-        return data;
+
+
     }
+
+
+    private void renderHorizontalBarForCurrentMonth(final MonthSpendingDto monthSpendingDto) {
+        final ProgressBar progressBar = new ProgressBar(this.getApplicationContext(), null, android.R.attr.progressBarStyleHorizontal);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 50);
+        params.setMargins(8,40,8,8);
+        progressBar.setLayoutParams(params);
+        progressBar.setMax(100000);
+        progressBar.setProgressDrawable(this.getResources().getDrawable(R.drawable.gradient_progress));
+        progressBar.setVisibility(View.VISIBLE);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(progressStatus < monthSpendingDto.getTotalSpent().intValue()){
+                    progressStatus +=1500;
+                    try{
+                        Thread.sleep(50);
+                    }catch(InterruptedException e){
+                        e.printStackTrace();
+                    }
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressBar.setProgress(progressStatus);
+                        }
+                    });
+                }
+            }
+        }).start();
+
+        TextView textView1 = new TextView(this.getApplicationContext());
+        textView1.setText(monthSpendingDto.getTotalSpent().intValue()+"");
+        textView1.setTextColor(Color.BLACK);
+        textView1.setTextSize(14);
+
+        TextView textView2 = new TextView(this.getApplicationContext());
+        textView2.setText("100000");
+        textView2.setTextColor(Color.BLACK);
+        textView2.setTextSize(14);
+
+        LinearLayout linearLayoutForText = new LinearLayout(this.getApplicationContext());
+        linearLayoutForText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        linearLayoutForText.setOrientation(LinearLayout.HORIZONTAL);
+        linearLayoutForText.addView(textView1);
+        TextView textView = new TextView(this.getApplicationContext());
+        textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        linearLayoutForText.addView(textView);
+        linearLayoutForText.addView(textView2);
+
+        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.graph);
+        linearLayout.setGravity(Gravity.CENTER_VERTICAL);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        linearLayout.addView(progressBar);
+        linearLayout.addView(linearLayoutForText);
+
+    }
+
 
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        months.add("Jan");
-        months.add("Feb");
-        months.add("Mar");
-        months.add("Apr");
-        months.add("May");
-        months.add("Jun");
-        months.add("Jul");
-        months.add("Aug");
-        months.add("Sep");
-        months.add("Oct");
-        months.add("Nov");
-        months.add("Dec");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_graph);
         Intent intent = getIntent();
